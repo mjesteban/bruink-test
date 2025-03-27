@@ -5,8 +5,6 @@ declare(strict_types=1);
 
 //require __DIR__.'/vendor/autoload.php';
 
-//$app = require_once __DIR__.'/bootstrap/app.php';
-
 main();
 
 function main(): void
@@ -19,16 +17,15 @@ function main(): void
     echo 'Type "exit" to quit.'.PHP_EOL.PHP_EOL;
 
     while (true) {
-        echo 'calc > ';
-        $readLine = trim(fgets(STDIN));
+        $line = trim(readline('calc > '));
 
-        if ($readLine === 'exit') {
+        if ($line === 'exit') {
             echo 'Bye!'.PHP_EOL;
             break;
         }
 
         try {
-            eval('echo '.$readLine.";");
+            eval('echo '.$line.";");
             echo PHP_EOL;
         } catch (Throwable $e) {
             echo 'Error in operation: '.$e->getMessage().PHP_EOL;
