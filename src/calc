@@ -1,0 +1,59 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+//require __DIR__.'/vendor/autoload.php';
+
+//$app = require_once __DIR__.'/bootstrap/app.php';
+
+main();
+
+function main(): void
+{
+    echo 'Welcome to Buink Calculator!'.PHP_EOL;
+    echo PHP_EOL;
+    echo 'Arithmetic operators allowed: '.implode(', ', getOperators()).PHP_EOL;
+    echo 'Math function allowed: '.implode(', ', getMathFunctions()).PHP_EOL;
+    echo PHP_EOL;
+    echo 'Type "exit" to quit.'.PHP_EOL.PHP_EOL;
+
+    while (true) {
+        echo 'calc > ';
+        $readLine = trim(fgets(STDIN));
+
+        if ($readLine === 'exit') {
+            echo 'Bye!'.PHP_EOL;
+            break;
+        }
+
+        try {
+            eval('echo '.$readLine.";");
+            echo PHP_EOL;
+        } catch (Throwable $e) {
+            echo 'Error in operation: '.$e->getMessage().PHP_EOL;
+        }
+    }
+}
+
+function isValidOperation(string $line): bool
+{
+    return false;
+}
+
+function getOperators(): array
+{
+    return [
+        '+',
+        '-',
+        '*',
+        '/',
+    ];
+}
+
+function getMathFunctions(): array
+{
+    return [
+        'sqrt',
+    ];
+}

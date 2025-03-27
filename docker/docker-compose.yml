@@ -5,7 +5,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    container_name: bruink-test
+    container_name: buink-test
     working_dir: /var/www/
     volumes:
       - ../src:/var/www
