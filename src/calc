@@ -7,37 +7,6 @@ declare(strict_types=1);
 
 main();
 
-function main(): void
-{
-    echo 'Welcome to Buink Calculator!'.PHP_EOL;
-    echo PHP_EOL;
-    echo 'Arithmetic operators allowed: '.implode(', ', getOperators()).PHP_EOL;
-    echo 'Math function allowed: '.implode(', ', getMathFunctions()).PHP_EOL;
-    echo PHP_EOL;
-    echo 'Type "exit" to quit.'.PHP_EOL.PHP_EOL;
-
-    while (true) {
-        $line = trim(readline('calc > '));
-
-        if ($line === 'exit') {
-            echo 'Bye!'.PHP_EOL;
-            break;
-        }
-
-        try {
-            eval('echo '.$line.";");
-            echo PHP_EOL;
-        } catch (Throwable $e) {
-            echo 'Error in operation: '.$e->getMessage().PHP_EOL;
-        }
-    }
-}
-
-function isValidOperation(string $line): bool
-{
-    return false;
-}
-
 function getOperators(): array
 {
     return [
@@ -53,4 +22,88 @@ function getMathFunctions(): array
     return [
         'sqrt',
     ];
+}
+
+function main(): void
+{
+    $operators = implode(', ', getOperators());
+    $mathFunctions = implode(', ', getMathFunctions());
+
+    echo <<<HEREDOC
+Welcome to Buink Calculator!
+
+Arithmetic operators allowed: $operators
+Math function allowed: $mathFunctions
+
+Type "exit" to quit.
+
+HEREDOC.PHP_EOL;
+
+    while (true) {
+        $line = trim((string) readline('calc > '));
+
+        if ($line === 'exit') {
+            echo 'Bye!'.PHP_EOL;
+            break;
+        }
+
+        if (!isValidOperation($line)) {
+            continue;
+        }
+
+        try {
+            eval('echo '.$line.";");
+            echo PHP_EOL;
+        } catch (Throwable $e) {
+            echo 'Error in operation: '.$e->getMessage().PHP_EOL;
+        }
+    }
+}
+
+function isValidOperation(string $line): bool
+{
+    $tokens = token_get_all('<?php '.$line);
+    array_shift($tokens);
+
+    $allowedTokens = [
+        T_LNUMBER,
+        T_DNUMBER,
+        T_WHITESPACE,
+        T_POW,
+        T_STRING, //for math functions
+    ];
+
+    foreach ($tokens as $token) {
+        if (is_array($token)) {
+            $constant = $token[0];
+            $value = $token[1];
+
+            if (!in_array($constant, $allowedTokens, true)) {
+                echo 'Invalid input.'.PHP_EOL;
+                return false;
+            }
+
+            if ($constant === T_POW) {
+                if (!in_array($value, getOperators(), true)) {
+                    echo 'Invalid operator.'.PHP_EOL;
+                    return false;
+                }
+            }
+
+            if ($constant === T_STRING) {
+                if (!in_array($value, getMathFunctions(), true)) {
+                    echo 'Invalid math function.'.PHP_EOL;
+                    return false;
+                }
+            }
+
+        } else {
+            if (!in_array($token, getOperators(), true)) {
+                echo 'Invalid operator.'.PHP_EOL;
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
