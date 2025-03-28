@@ -3,9 +3,10 @@
 
 declare(strict_types=1);
 
-//require __DIR__.'/vendor/autoload.php';
-
 use App\Models\Calculator;
+
+const BASE_DIR = __DIR__.'/';
+require BASE_DIR.'vendor/autoload.php';
 
 $calculator = new Calculator();
 $calculator->run();

@@ -1,0 +1,16 @@
+{
+  "name": "mjesteban/buink-test",
+  "description": "A PHP CLI Calculator by Buink Technology Assessment for the Senior Full-Stack Developer role",
+  "type": "project",
+  "authors": [
+    {
+      "name": "Mario Joseph Esteban"
+    }
+  ],
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    }
+  }
+}
