@@ -35,12 +35,12 @@ Welcome to Buink Calculator!
 Arithmetic operators allowed: $operators
 Math function allowed: $mathFunctions
 
-Type "exit" to quit.
-
+Type "exit" or Ctrl-C to quit.
 HEREDOC.PHP_EOL;
 
     while (true) {
-        $line = trim((string) readline('calc > '));
+        $prompt = 'calc > ';
+        $line = preg_replace('/\s/', '', (string) readline($prompt));
 
         if ($line === 'exit') {
             echo 'Bye!'.PHP_EOL;
@@ -51,8 +51,11 @@ HEREDOC.PHP_EOL;
             continue;
         }
 
+        //convert math functions e.g. "9sqrt" to sqrt(9);
+        $line = convertMathFunction($line, getMathFunctions());
+
         try {
-            eval('echo '.$line.";");
+            calculate($line);
             echo PHP_EOL;
         } catch (Throwable $e) {
             echo 'Error in operation: '.$e->getMessage().PHP_EOL;
@@ -68,12 +71,11 @@ function isValidOperation(string $line): bool
     $allowedTokens = [
         T_LNUMBER,
         T_DNUMBER,
-        T_WHITESPACE,
         T_POW,
         T_STRING, //for math functions
     ];
 
-    foreach ($tokens as $token) {
+    foreach ($tokens as $index => $token) {
         if (is_array($token)) {
             $constant = $token[0];
             $value = $token[1];
@@ -106,4 +108,23 @@ function isValidOperation(string $line): bool
     }
 
     return true;
+}
+
+function convertMathFunction(string $line, array $mathFunctions): string
+{
+    $pattern = '/(\d+)('.implode('|', array_map('preg_quote', $mathFunctions)).')/';
+
+    return preg_replace($pattern, '$2($1)', $line);
+}
+
+function calculate(string $line): void
+{
+    $result = eval('return '.$line.';');
+
+    // https://floating-point-gui.de/languages/php
+    if (is_float($result)) {
+        $result = (float) number_format($result, 10);
+    }
+
+    echo $result;
 }
