@@ -2,14 +2,18 @@
 
 declare(strict_types=1);
 
-namespace app\Models;
+namespace App\Models;
 
+use App\Exceptions\CalculatorException;
+use App\Exceptions\InvalidInputException;
+use Exception;
 use Throwable;
 
-class Calculator
+readonly class Calculator
 {
-    private array $operators = ['+', '-', '*', '/',];
-    private array $mathFunctions = ['sqrt',];
+    public function __construct(private array $operators, private array $mathFunctions)
+    {
+    }
 
     public function run(): void
     {
@@ -17,26 +21,27 @@ class Calculator
 
         while (true) {
             $prompt = 'calc > ';
-            $line = preg_replace('/\s/', '', (string) readline($prompt));
+            $line = (string) readline($prompt);
 
             if ($line === 'exit') {
                 echo 'Bye!'.PHP_EOL;
                 break;
             }
 
-            if (!$this->isValidOperation($line)) {
+            try {
+                $line = preg_replace('/[\s,]/', '', $line);
+
+                $this->validateOperation($line);
+
+                // Convert math functions e.g. "9sqrt" to sqrt(9);
+                $line = $this->convertMathFunction($line, $this->getMathFunctions());
+
+            } catch (CalculatorException|InvalidInputException|Exception $e) {
+                echo $e->getMessage().PHP_EOL;
                 continue;
             }
 
-            // Convert math functions e.g. "9sqrt" to sqrt(9);
-            $line = $this->convertMathFunction($line, $this->getMathFunctions());
-
-            try {
-                $this->calculate($line);
-                echo PHP_EOL;
-            } catch (Throwable $e) {
-                echo 'Error in operation: '.$e->getMessage().PHP_EOL;
-            }
+            echo $this->calculate($line).PHP_EOL;
         }
     }
 
@@ -65,10 +70,19 @@ HEREDOC.PHP_EOL;
         return $this->mathFunctions;
     }
 
-    private function isValidOperation(string $line): bool
+    /**
+     * @throws InvalidInputException
+     * @throws CalculatorException
+     */
+    public function validateOperation(string $line): void
     {
         $tokens = token_get_all('<?php '.$line);
+        // Remove the opening PHP tag
         array_shift($tokens);
+
+        if (empty($tokens)) {
+            throw new InvalidInputException();
+        }
 
         $allowedTokens = [
             T_LNUMBER,
@@ -77,56 +91,54 @@ HEREDOC.PHP_EOL;
             T_STRING, // for math functions
         ];
 
-        foreach ($tokens as $index => $token) {
+        foreach ($tokens as $token) {
             if (is_array($token)) {
                 $constant = $token[0];
                 $value = $token[1];
 
                 if (!in_array($constant, $allowedTokens, true)) {
-                    echo 'Invalid input.'.PHP_EOL;
-                    return false;
+                    throw new InvalidInputException();
                 }
 
                 if ($constant === T_POW) {
                     if (!in_array($value, $this->getOperators(), true)) {
-                        echo 'Invalid operator.'.PHP_EOL;
-                        return false;
+                        throw CalculatorException::invalidOperatorFunction();
                     }
                 }
 
                 if ($constant === T_STRING) {
                     if (!in_array($value, $this->getMathFunctions(), true)) {
-                        echo 'Invalid math function.'.PHP_EOL;
-                        return false;
+                        throw CalculatorException::invalidMathFunction();
                     }
                 }
             } else {
                 if (!in_array($token, $this->getOperators(), true)) {
-                    echo 'Invalid operator.'.PHP_EOL;
-                    return false;
+                    throw CalculatorException::invalidOperatorFunction();
                 }
             }
         }
-
-        return true;
     }
 
-    private function convertMathFunction(string $line, array $mathFunctions): string
+    public function convertMathFunction(string $line, array $mathFunctions): string
     {
         $pattern = '/(\d+)('.implode('|', array_map('preg_quote', $mathFunctions)).')/';
 
         return preg_replace($pattern, '$2($1)', $line);
     }
 
-    private function calculate(string $line): void
+    public function calculate(string $line): string
     {
-        $result = eval('return '.$line.';');
+        try {
+            $result = eval('return '.$line.';');
 
-        // https://floating-point-gui.de/languages/php
-        if (is_float($result)) {
-            $result = (float) number_format($result, 10);
+            // https://floating-point-gui.de/languages/php
+            if (is_float($result)) {
+                $result = (float) number_format($result, 14, '.', '');
+            }
+
+            return (string) $result;
+        } catch (Throwable $e) {
+            return 'Error: '.$e->getMessage();
         }
-
-        echo $result;
     }
 }
